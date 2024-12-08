@@ -162,7 +162,8 @@ const posts = [
     "U gotta sit back & be bored when u tryna hit them goals",
     "The best victories are the ones they never see coming.",
     "Success is often a function of who is willing to suck at something the longest.",
-    "do whatever it takes to win"
+    "do whatever it takes to win",
+    "People respect consistency",
     
 
 ]
@@ -174,19 +175,26 @@ const agent = new BskyAgent({
 
 // main function containing core logic for Bluesky posting
 async function main() {
+
     // Log in to Bluesky w env variable credentials
     await agent.login({ 
         identifier: process.env.BLUESKY_USERNAME, // Bluesky username
         password: process.env.BLUESKY_PASSWORD // Bluesky password
     });
 
+    const profileData  = await agent.getProfile({ actor: 'ourdearfriend.bsky.social' })
+    // const { did, displayName, ... } = profileData
+    console.log(profileData);
+
     // Make sure post doesn't already exist
     const { data } = await agent.getTimeline({
-        cursor: "...",
-        limit: 100,
+
     });
     
     const { feed: postsArray, cursor: nextPage } = data;
+
+    console.log(postsArray.length);
+    console.log(nextPage);
 
 
 
