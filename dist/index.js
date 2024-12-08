@@ -16,7 +16,6 @@ dotenv.config();
 // Posts
 const posts = [
     "A man can accept failure but he must never accept defeat.",
-    "Them niggas never been chased before. \n\n Cant fight off the back foot. Easy money.",
     "There is no healing. There is only letting go.",
     "Your breakthrough is on the other side of your consistency.",
     "Everyone must choose one of two pains: the pain of discipline or the pain of regret.",
@@ -25,7 +24,7 @@ const posts = [
     "Never underestimate your own intelligence and never overestimate the intelligence of others.",
     "Fortune favors the bold",
     "imagine the come up story",
-    "The two most common themes used for selling shit? Fear and sex.",
+    "The two most common themes used for selling things? Fear and sex.",
     "You gotta be okay with being bad at something before you’re great at it.\n\n Do it anyway.",
     "Us Black Men from the hood have to be the ones to take care of the Black boys from the hood & properly uplift them. Nobody else will.",
     "Stay patient and committed to the process.",
@@ -55,8 +54,6 @@ const posts = [
     "Be careful about your thoughts, don’t give your attention to everything.",
     "Put your ego aside, take ownership, and keep moving.",
     "Accept the present and mold the future.",
-    "Beware the barrenness of a busy life. Seek depth and meaning.",
-    "after you get ya work done shit feel so good",
     "Stop being who they want you to be and start being who you are.",
     "People don't even realize how easy it is to outwork everybody out here.",
     "…want something? Get it done. No excuses.",
@@ -108,7 +105,7 @@ const posts = [
     "Stay loyal to your creativity because it's a gift",
     "Having a highly educated circle will take you places you’d never imagine.",
     "You can literally come back from anything. It's all about your mindset.",
-    "Move with purpose nigga",
+    "Move with purpose",
     "Even the unlucky gets lucky every now and then.",
     "People don’t usually find fulfillment in pursuing money but they often find money pursuing fulfillment.",
     "Never buy into the scam that you need to mistreat people to get ahead in life. Complete nonsense.",
@@ -164,14 +161,42 @@ const posts = [
     "Success is often a function of who is willing to suck at something the longest.",
     "do whatever it takes to win",
     "People respect consistency",
-    
-
+    "build a reputation you don't need to explain.",
+    "Life is the ultimate game",
+    "You aren't going to be passionate about something you have zero experience in.",
+    "The goal isn't to not work.\n\nThe goal is to choose work.",
+    "Your work matters more than you know.",
+    "the worst thing you can do is be in the ‘zero to one’ phase of more than one pursuit at a time",
+    "The solution to most of your problems is perspective.",
+    "Spend time with people who have bigger goals than you.",
+    "When it comes to your dreams make them work no matter what it takes.",
+    "make everything fluid and mobile.",
+    "Play games that nobody else can see yet"
 ]
 
 // Create new instance of Bluesky agent to handle communication w Bluesky service
 const agent = new BskyAgent({
     service: 'https://bsky.social', // Specify the Bluesky service URL
 });
+
+// Collect all of dear friend's posts
+async function fetchAllPosts(agent) {
+    const allPosts = [];
+    let cursor;
+
+    do {
+        const { data } = await agent.getAuthorFeed({
+            actor: process.env.BLUESKY_USERNAME,
+            cursor,
+            limit: 100,
+        });
+
+        allPosts.push(...data.feed);
+        cursor = data.cursor; // Pagination
+    } while (cursor);
+
+    return allPosts;
+}
 
 // main function containing core logic for Bluesky posting
 async function main() {
