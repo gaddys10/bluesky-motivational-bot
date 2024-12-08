@@ -1,0 +1,22 @@
+{
+  "name": "bluesky-motivational-bot",
+  "version": "1.0.0",
+  "description": "A bot meant to automatically post motivational messages",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "test": "test index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@atproto/api": "^0.13.19",
+    "atproto": "^0.0.1",
+    "cron": "^3.2.1",
+    "dotenv": "^16.4.7",
+    "process": "^0.11.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
