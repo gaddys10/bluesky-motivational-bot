@@ -21,11 +21,30 @@ const agent = new BskyAgent({
     service: 'https://bsky.social', // Specify the Bluesky service URL
 });
 
-// Log in to Bluesky w env variable credentials
-await agent.login({ 
-    identifier: process.env.BLUESKY_USERNAME, // Bluesky username
-    password: process.env.BLUESKY_PASSWORD // Bluesky password
-});
+async function loginWithRateLimitHandling(agent) {
+    try {
+        const session = agent.session;
+        if (!(session && session.handle)) {
+            await agent.login({
+                identifier: process.env.BLUESKY_USERNAME,
+                password: process.env.BLUESKY_PASSWORD
+            });
+        }
+    } catch (error) {
+        if (error.message.includes("Rate Limit Exceeded")) {
+            const resetTime = error.headers['ratelimit-reset']; // Time when limit resets (UTC timestamp)
+            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds (UTC)
+            const waitTime = resetTime - currentTime + 5; // Wait for the reset time plus 5 seconds buffer
+            console.log(`Rate limit exceeded. Waiting ${waitTime} seconds before retrying...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime * 1000)); // Wait for the reset time to pass
+            return loginWithRateLimitHandling(agent); // Retry login after waiting
+        }
+        throw error; // Re-throw other errors
+    }
+}
+
+// Example usage:
+await loginWithRateLimitHandling(agent);
 
 // FUNCTION: Collect all posts
 async function fetchAllPosts(agent) {
@@ -120,7 +139,6 @@ async function followOhsyrusFollowers(actor) {
 async function likeSearchedPosts() {
     let cursor = null; // Initialize cursor for the first query
 
-    do {
         try {
             const response = await agent.app.bsky.feed.searchPosts({
                 q: "motivation",
@@ -139,56 +157,50 @@ async function likeSearchedPosts() {
                             post.uri,
                             post.cid,
                         );
-                        console.log(`Liked post: ${preview}`);
+                        console.log(`${Date.now()} - Liked post: ${preview}`);
                     }
                 } catch (error) {
-                    console.error(`Error liking post: ${post.uri}`, error);
+                    console.error(`${Date.now()} - Error liking post: ${post.uri}`, error);
                 }
             }
         } catch (error) {
             console.error("Error during search for 'I need motivation':", error);
-            break; // Exit loop on error
-        }
-    } while (cursor);
+    }
 
-    cursor = null; // Reset cursor for the second query
+    try {
+        const response = await agent.app.bsky.feed.searchPosts({
+            q: "discipline",
+            limit: 5, // Adjust limit as needed
+        });
 
-    do {
-        try {
-            const response = await agent.app.bsky.feed.searchPosts({
-                q: "discipline",
-                limit: 5, // Adjust limit as needed
-            });
+        const { posts: posts, cursor: nextCursor } = response.data;
 
-            const { posts: posts, cursor: nextCursor } = response.data;
-
-            for (const post of response.data.posts) {
-                let preview2 = post.record.text;
-                preview2 = preview2.length > 20 ? preview2.substring(0, 20) + "..." : preview2;
-                try {
-                    if (!post.viewer?.like) {
-                        await agent.like(
-                            post.uri,
-                            post.cid,
-                        );
-                        console.log(`Liked post: ${preview2}`);
-                    }
-                } catch (error) {
-                    console.error(`Error liking post: ${post.uri}`, error);
+        for (const post of response.data.posts) {
+            let preview2 = post.record.text;
+            preview2 = preview2.length > 20 ? preview2.substring(0, 20) + "..." : preview2;
+            try {
+                if (!post.viewer?.like) {
+                    await agent.like(
+                        post.uri,
+                        post.cid,
+                    );
+                    console.log(`${Date.now()} - Liked post: ${preview2}`);
                 }
+            } catch (error) {
+                console.error(`${Date.now()} - Error liking post: ${post.uri}`, error);
             }
-
-            cursor = nextCursor; // Update cursor for pagination
-        } catch (error) {
-            console.error("Error during search for 'I need discipline':", error);
-            break; // Exit loop on error
         }
-    } while (cursor);
+
+        cursor = nextCursor; // Update cursor for pagination
+    } catch (error) {
+        console.error("${Date.now()} - Error during search for 'I need discipline':", error);
+    }
+
 }
 
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
-const postScheduleExpression = '0 */3 */30 * *'; // Run once every three hours in prod
+const postScheduleExpression = '0 */3 */0 * *'; // Run once every three hours in prod
 const followScheduleExpression = '0 * */45 * *'; // Run once every 45 minutes
 const searchLikeScheduleExpression = '0 * */30 * *'; // run once every 30 minutes
 
