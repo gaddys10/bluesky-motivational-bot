@@ -49,21 +49,15 @@ async function fetchAllPosts(agent) {
 // FUNCTION: Bluesky posting
 async function postToBlueSky(postArray) {
 
-    //get all posts
     const allPosts = await fetchAllPosts(agent);
+    let newPost;
+    let postExists = true;
 
-    //get random post from postArray
-    let randomIndex = Math.floor(Math.random() * postArray.length)
-    let newPost = postArray[randomIndex]
-
-    //check if post exists
-    let postExists = allPosts.some(post => post === newPost);
-
-    // if post already exists, recursively look for another post and exit function after
-    if(postExists){
-        console.log("Selected post has already been posted.. finding another one");
-        postToBlueSky(postArray)
-        return;
+    while (postExists) {
+        const randomIndex = Math.floor(Math.random() * postArray.length);
+        newPost = postArray[randomIndex];
+        postExists = allPosts.some(post => post.text === newPost); // Compare `text` field specifically
+        if (postExists) console.log("Selected post already posted. Trying another...");
     }
 
     // Post to BlueSky
@@ -76,11 +70,10 @@ async function postToBlueSky(postArray) {
     console.log(`Just posted: ${newPost}`);
 }
 
+// FUNCTION: Follow @ohsyrus followers
 async function followOhsyrusFollowers(actor) {
     const allFollowers = [];
     let cursor = null;
-
-    console.log(`Fetching all followers for @${actor}...`);
 
     // Fetch all followers using pagination
     do {
@@ -123,18 +116,105 @@ async function followOhsyrusFollowers(actor) {
     }
 }
 
-// Configure postToBlueSky to run on a 3 hour cron job
+// FUNCTION: Like 5 searched posts
+async function likeSearchedPosts() {
+    let cursor = null; // Initialize cursor for the first query
+
+    do {
+        try {
+            const response = await agent.app.bsky.feed.searchPosts({
+                q: "motivation",
+                limit: 5, // Adjust limit as needed
+            });
+
+            const { posts: posts, cursor: nextCursor } = response.data;
+            // console.log(response.data.posts);
+
+            for (const post of response.data.posts) {
+                try {
+                    if (!post.viewer?.like) {
+                        await agent.like(
+                            post.uri,
+                            post.cid,
+                        );
+                        console.log(`Liked post: ${post.record.text}`);
+                    }
+                } catch (error) {
+                    console.error(`Error liking post: ${post.uri}`, error);
+                }
+            }
+        } catch (error) {
+            console.error("Error during search for 'I need motivation':", error);
+            break; // Exit loop on error
+        }
+    } while (cursor);
+
+    cursor = null; // Reset cursor for the second query
+
+    do {
+        try {
+            const response = await agent.app.bsky.feed.searchPosts({
+                q: "discipline",
+                limit: 5, // Adjust limit as needed
+            });
+
+            const { posts: posts, cursor: nextCursor } = response.data;
+
+            for (const post of response.data.posts) {
+                try {
+                    if (!post.viewer?.like) {
+                        await agent.like(
+                            post.uri,
+                            post.cid,
+                        );
+                        console.log(`Liked post: ${post.record.text}`);
+                    }
+                } catch (error) {
+                    console.error(`Error liking post: ${post.uri}`, error);
+                }
+            }
+
+            cursor = nextCursor; // Update cursor for pagination
+        } catch (error) {
+            console.error("Error during search for 'I need discipline':", error);
+            break; // Exit loop on error
+        }
+    } while (cursor);
+}
+
+// change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
-
 const postScheduleExpression = '0 */3 */30 * *'; // Run once every three hours in prod
-const postJob = new CronJob(postScheduleExpression, postToBlueSky(posts)); // change to scheduleExpressionMinute for testing
+const followScheduleExpression = '0 * */45 * *'; // Run once every 45 minutes
+const searchLikeScheduleExpression = '0 * */30 * *'; // run once every 30 minutes
 
-// Configure followOhsyrusFollowers to run every 30 minutes
-const likeScheduleExpression = '0 * */10 * *'; // Run once every 10 minutes in prod
-const likeJob = new CronJob(likeScheduleExpression, followOhsyrusFollowers('ohsyrus.bsky.social')); // change to scheduleExpressionMinute for testing
+// Configure postToBlueSky to run on a 3 hour cron job
+const postJob = new CronJob(
+    postScheduleExpression, 
+    postToBlueSky(posts)
+);
 
-// START POST CRON JOB!
+// Configure followOhsyrusFollowers to run every 45 minutes
+const followJob = new CronJob(
+    followScheduleExpression, 
+    followOhsyrusFollowers('ohsyrus.bsky.social')
+); 
+
+// Configure likeSearchPosts to run every 30 minutes
+const searchLikeJob = new CronJob(
+    searchLikeScheduleExpression,
+    likeSearchedPosts()
+);
+
+// START POST CRON JOB! (8 posts/day)[Every 3h]
 postJob.start();
 
-// START LIKE CRON JOB!
-likeJob.start();
+// START @OHSYRUS FOLLOW CRON JOB! (36 follows of @ohsyrus followers/day)[Every 45m]
+followJob.start();
+
+// SEARCH LIKER CRON JOB (240 likes/day)[Every 30m]
+searchLikeJob.start();
+
+// FOLLOW BACK CRON JOB
+
+// QUOTE POST REPOST CRON JOB

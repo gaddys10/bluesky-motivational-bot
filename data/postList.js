@@ -1,4 +1,3 @@
-
 export const posts = [
     "A man can accept failure but he must never accept defeat.",
     "There is no healing. There is only letting go.",
@@ -32,6 +31,9 @@ export const posts = [
     "Goals are for people who care about winning once. Systems are for people who care about winning repeatedly.",
     "Work smarter",
     "There’s an obstacle in the way, be prepared.",
+    "Make it stupid easy, but do it every day.",
+    "Finished is better than perfect",
+    "Get in the habit of doing it now.",
     "Do not waste time on things you cannot change or influence. Just keep moving.",
     "Nothing bad can really happen, that everything that happens to us in life can become fuel for us to move forward.",
     "It is unrealistc to expect people to see you as you see yourself.",
