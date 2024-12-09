@@ -1,4 +1,3 @@
-
 export const posts = [
     "A man can accept failure but he must never accept defeat.",
     "There is no healing. There is only letting go.",
@@ -32,6 +31,9 @@ export const posts = [
     "Goals are for people who care about winning once. Systems are for people who care about winning repeatedly.",
     "Work smarter",
     "There’s an obstacle in the way, be prepared.",
+    "Make it stupid easy, but do it every day.",
+    "Finished is better than perfect",
+    "Get in the habit of doing it now.",
     "Do not waste time on things you cannot change or influence. Just keep moving.",
     "Nothing bad can really happen, that everything that happens to us in life can become fuel for us to move forward.",
     "It is unrealistc to expect people to see you as you see yourself.",
@@ -129,6 +131,7 @@ export const posts = [
     "A prototype is worth a thousand meetings.",
     "Discipline can fix 80% of your problems.",
     "Don’t resent the competition, up your game.",
+    "Do the hardest part first",
     "You're not afraid of failing, you're afraid of being seen failing.",
     "Never spend too much time on things that don’t matter.",
     "A real hit record doesn’t have an expiration date",
@@ -142,6 +145,7 @@ export const posts = [
     "Start seeing things in terms of cause and effect, rather than good and bad, and life will make more sense.",
     "You can overcome burnout by believing you’re just high off cortisol rn",
     "There is no shame in making an honest effort.",
+    "Stay dangerous",
     "You are always ONE decision away from a totally different life.",
     "what's wrong bro you've barely touched your hero's journey",
     "U gotta sit back & be bored when u tryna hit them goals",
