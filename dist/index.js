@@ -131,13 +131,15 @@ async function likeSearchedPosts() {
             // console.log(response.data.posts);
 
             for (const post of response.data.posts) {
+                let preview = post.record.text;
+                preview = preview.length > 20 ? preview.substring(0, 20) + "..." : preview;
                 try {
                     if (!post.viewer?.like) {
                         await agent.like(
                             post.uri,
                             post.cid,
                         );
-                        console.log(`Liked post: ${post.record.text}`);
+                        console.log(`Liked post: ${preview}`);
                     }
                 } catch (error) {
                     console.error(`Error liking post: ${post.uri}`, error);
@@ -161,13 +163,15 @@ async function likeSearchedPosts() {
             const { posts: posts, cursor: nextCursor } = response.data;
 
             for (const post of response.data.posts) {
+                let preview2 = post.record.text;
+                preview2 = preview2.length > 20 ? preview2.substring(0, 20) + "..." : preview2;
                 try {
                     if (!post.viewer?.like) {
                         await agent.like(
                             post.uri,
                             post.cid,
                         );
-                        console.log(`Liked post: ${post.record.text}`);
+                        console.log(`Liked post: ${preview2}`);
                     }
                 } catch (error) {
                     console.error(`Error liking post: ${post.uri}`, error);
@@ -214,6 +218,8 @@ followJob.start();
 
 // SEARCH LIKER CRON JOB (240 likes/day)[Every 30m]
 searchLikeJob.start();
+
+// TIMELINE LIKER CRON JOB (2 LIKES/DAY)[Every 12h]
 
 // FOLLOW BACK CRON JOB
 
