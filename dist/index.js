@@ -21,6 +21,19 @@ const agent = new BskyAgent({
     service: 'https://bsky.social', // Specify the Bluesky service URL
 });
 
+function getFormattedDate() {
+    return new Date(Date.now()).toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit', 
+      hour12: true 
+    });
+  }
+  
+
 async function loginWithRateLimitHandling(agent) {
     try {
         const session = agent.session;
@@ -86,7 +99,7 @@ async function postToBlueSky(postArray) {
     });
 
     // Log post success
-    console.log(`Just posted: ${newPost}`);
+    console.log(`${getFormattedDate()} - Just posted: ${newPost}`);
 }
 
 // FUNCTION: Follow @ohsyrus followers
@@ -122,7 +135,7 @@ async function followOhsyrusFollowers(actor) {
             // Check if already following
             if (!follower.viewer?.following) {
                 //Follow by DID if not following & exit loop
-                console.log(`Now following: ${follower.handle}`);
+                console.log(`${getFormattedDate()} - Now following: ${follower.handle}`);
                 await agent.follow(follower.did);
                 break;
             } else {
@@ -157,10 +170,10 @@ async function likeSearchedPosts() {
                             post.uri,
                             post.cid,
                         );
-                        console.log(`${Date.now()} - Liked post: ${preview}`);
+                        console.log(`${getFormattedDate()} - Liked post: ${preview}`);
                     }
                 } catch (error) {
-                    console.error(`${Date.now()} - Error liking post: ${post.uri}`, error);
+                    console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
                 }
             }
         } catch (error) {
@@ -184,16 +197,16 @@ async function likeSearchedPosts() {
                         post.uri,
                         post.cid,
                     );
-                    console.log(`${Date.now()} - Liked post: ${preview2}`);
+                    console.log(`${getFormattedDate()} - Liked post: ${preview2}`);
                 }
             } catch (error) {
-                console.error(`${Date.now()} - Error liking post: ${post.uri}`, error);
+                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
             }
         }
 
         cursor = nextCursor; // Update cursor for pagination
     } catch (error) {
-        console.error("${Date.now()} - Error during search for 'I need discipline':", error);
+        console.error(`${getFormattedDate()} - Error during search for 'I need discipline':`, error);
     }
 
 }
@@ -201,8 +214,8 @@ async function likeSearchedPosts() {
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
 const postScheduleExpression = '0 */3 * * *'; // Run once every three hours in prod
-const followScheduleExpression = '0 * */45 * *'; // Run once every 45 minutes
-const searchLikeScheduleExpression = '0 * */30 * *'; // run once every 30 minutes
+const followScheduleExpression = '0 * */5 * *'; // Run once every 5 minutes
+const searchLikeScheduleExpression = '0 * */15 * *'; // run once every 30 minutes
 
 // Configure postToBlueSky to run on a 3 hour cron job
 const postJob = new CronJob(
