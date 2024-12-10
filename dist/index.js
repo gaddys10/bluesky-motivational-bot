@@ -200,7 +200,7 @@ async function likeSearchedPosts() {
 
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
-const postScheduleExpression = '0 */3 */0 * *'; // Run once every three hours in prod
+const postScheduleExpression = '0 */3 * * *'; // Run once every three hours in prod
 const followScheduleExpression = '0 * */45 * *'; // Run once every 45 minutes
 const searchLikeScheduleExpression = '0 * */30 * *'; // run once every 30 minutes
 
