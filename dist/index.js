@@ -23,16 +23,15 @@ const agent = new BskyAgent({
 
 function getFormattedDate() {
     return new Date(Date.now()).toLocaleString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit', 
-      hour12: true 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        hour12: true 
     });
-  }
-  
+}
 
 async function loginWithRateLimitHandling(agent) {
     try {
@@ -89,7 +88,7 @@ async function postToBlueSky(postArray) {
         const randomIndex = Math.floor(Math.random() * postArray.length);
         newPost = postArray[randomIndex];
         postExists = allPosts.some(post => post.text === newPost); // Compare `text` field specifically
-        if (postExists) console.log("Selected post already posted. Trying another...");
+        if (postExists) console.log(`${getFormattedDate()} - Selected post already posted. Trying another...`);
     }
 
     // Post to BlueSky
@@ -126,7 +125,7 @@ async function followOhsyrusFollowers(actor) {
 
     } while (cursor);
 
-    console.log(`${allFollowers.length} currently following @ohsyrus.bsky.social`)
+    // console.log(`${getFormattedDate()} - ${allFollowers.length} currently following @ohsyrus.bsky.social`)
 
     // For each follower starting from earlierst (to only run once)
     for (let i = allFollowers.length - 1; i >= 0; i--) {
@@ -139,11 +138,11 @@ async function followOhsyrusFollowers(actor) {
                 await agent.follow(follower.did);
                 break;
             } else {
-                console.log(`Already following: ${follower.handle}. Skipping..`);
+                // console.log(`${getFormattedDate()} - Already following: ${follower.handle}. Skipping..`);
             }
             
         } catch (error) {
-            console.error(`Error following ${follower.handle}:`, error);
+            console.error(`${getFormattedDate()} - Error following @${follower.handle}:`, error);
         }
     }
 }
@@ -177,7 +176,7 @@ async function likeSearchedPosts() {
                 }
             }
         } catch (error) {
-            console.error("Error during search for 'I need motivation':", error);
+            console.error(`${getFormattedDate()}Error during search for 'I need motivation':`, error);
     }
 
     try {
@@ -214,26 +213,37 @@ async function likeSearchedPosts() {
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
 const postScheduleExpression = '0 */3 * * *'; // Run once every three hours in prod
-const followScheduleExpression = '0 * */5 * *'; // Run once every 5 minutes
-const searchLikeScheduleExpression = '0 * */15 * *'; // run once every 30 minutes
+const followScheduleExpression = '30 */8 * * *'; // Run once every 8h 30m starting at 12am
+const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
+const likeFollowingScheduleExpression = '30 */6 * * *' // Run every 6h 30m starting at 12am
+const searchLikeScheduleExpression = '30 */1 * * *'; // run once every 1h 30m
 
 // Configure postToBlueSky to run on a 3 hour cron job
 const postJob = new CronJob(
     postScheduleExpression, 
-    postToBlueSky(posts)
+    async () => {
+        await postToBlueSky(posts);
+    }
 );
 
 // Configure followOhsyrusFollowers to run every 45 minutes
 const followJob = new CronJob(
     followScheduleExpression, 
-    followOhsyrusFollowers('ohsyrus.bsky.social')
+    async () => {
+        await followOhsyrusFollowers('ohsyrus.bsky.social');
+    }
 ); 
 
 // Configure likeSearchPosts to run every 30 minutes
 const searchLikeJob = new CronJob(
     searchLikeScheduleExpression,
-    likeSearchedPosts()
+    async () => {
+        await likeSearchedPosts();
+    }
 );
+
+// configure followBack to run twice daily
+const followBackJob = new CronJob()
 
 // START POST CRON JOB! (8 posts/day)[Every 3h]
 postJob.start();
