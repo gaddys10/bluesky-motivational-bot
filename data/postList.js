@@ -207,4 +207,5 @@ export const posts = [
     "Losers change their goals because they’re too lazy to change themselves.",
     "Judge a man by his questions",
     "Even if you fuck up, go full speed 👹 ",
+    "That's cool but how does it create manufacturing in our community?"
 ]
