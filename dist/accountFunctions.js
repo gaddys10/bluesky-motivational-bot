@@ -117,6 +117,36 @@ export async function postToBlueSky(postArray, agent) {
     console.log(`${getFormattedDate()} - Just posted: ${newPost}`);
 }
 
+export async function likeFeed(agent){
+    try{
+        const { data } = await agent.getTimeline({
+            limit: 15,
+        });
+
+        const { feed: postsArray, cursor: nextPage } = data
+
+        for(const post of postsArray){
+            
+            if(post.post?.record?.text && 
+                (post.post.record.text.includes("motivation") || 
+                post.post.record.text.includes("discipline") || 
+                post.post.record.text.includes("congratulations!") ||
+                post.post.record.text.includes("hopeful") ||
+                post.post.record.text.includes("inspiration") ||
+                post.post.record.text.includes("happiness")){
+                    let preview = post.post.record.text;
+                    preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
+                    await agent.like(post.post.uri, post.post.cid);
+                    console.log(`${getFormattedDate()} - Liked feed post: ${preview}`);
+            }
+            console.log(post.post.record.text);
+
+        }
+    } catch (error){
+        console.error(`${getFormattedDate()} - Error during liking feed`, error.message, error.stack)
+    }
+}
+
 // FUNCTION: Like 5 searched posts
 export async function likeSearchedPosts(agent) {
     try {
@@ -172,35 +202,3 @@ export async function likeSearchedPosts(agent) {
     }
 }
 
-export async function likeFeed(agent){
-    try{
-        const { data } = await agent.getTimeline({
-            limit: 15,
-        });
-
-        const { feed: postsArray, cursor: nextPage } = data
-
-        for(const post of postsArray){
-            
-            if(post.post?.record?.text && 
-                (post.post.record.text.includes("motivation") || 
-                post.post.record.text.includes("discipline") || 
-                post.post.record.text.includes("congratulations!") ||
-                post.post.record.text.includes("graduated with my degree") ||
-                post.post.record.text.includes("hopeful") ||
-                post.post.record.text.includes("inspiration") ||
-                post.post.record.text.includes("I'm so excited") ||
-                post.post.record.text.includes("happiness") ||
-                post.post.record.text.includes("to the gym"))){
-                    let preview = post.post.record.text;
-                    preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
-                    await agent.like(post.post.uri, post.post.cid);
-                    console.log(`${getFormattedDate()} - Liked feed post: ${preview}`);
-            }
-            console.log(post.post.record.text);
-
-        }
-    } catch (error){
-        console.error(`${getFormattedDate()} - Error during liking feed`, error.message, error.stack)
-    }
-}
