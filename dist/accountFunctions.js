@@ -1,24 +1,4 @@
-export async function loginWithRateLimitHandling(agent) {
-    try {
-        const session = agent.session;
-        if (!(session && session.handle)) {
-            await agent.login({
-                identifier: process.env.BLUESKY_USERNAME,
-                password: process.env.BLUESKY_PASSWORD
-            });
-        }
-    } catch (error) {
-        if (error.message.includes("Rate Limit Exceeded")) {
-            const resetTime = error.headers['ratelimit-reset']; // Time when limit resets (UTC timestamp)
-            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds (UTC)
-            const waitTime = resetTime - currentTime + 5; // Wait for the reset time plus 5 seconds buffer
-            console.log(`Rate limit exceeded. Waiting ${waitTime} seconds before retrying...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime * 1000)); // Wait for the reset time to pass
-            return loginWithRateLimitHandling(agent); // Retry login after waiting
-        }
-        throw error; // Re-throw other errors
-    }
-}
+
 
 // FUNCTION: Collect all posts
 export async function fetchAllPosts(agent) {
@@ -36,7 +16,7 @@ export async function fetchAllPosts(agent) {
     return allPosts;
 }
 
-// FUNCTION: Follow @ohsyrus followers
+// FUNCTION: Follow @ohsyrus.bsky.social followers
 export async function followOhsyrusFollowers(agent) {
     const allFollowers = [];
     let cursor = null;
@@ -44,7 +24,7 @@ export async function followOhsyrusFollowers(agent) {
     // Fetch all followers using pagination
     do {
         const response = await agent.app.bsky.graph.getFollowers({
-            actor,
+            actor: 'ohsyrus.bsky.social',
             cursor,
             limit: 100, // Maximum limit per API request
         });
@@ -91,6 +71,28 @@ export function getFormattedDate() {
     });
 }
 
+export async function loginWithRateLimitHandling(agent) {
+    try {
+        const session = agent.session;
+        if (!(session && session.handle)) {
+            await agent.login({
+                identifier: process.env.BLUESKY_USERNAME,
+                password: process.env.BLUESKY_PASSWORD
+            });
+        }
+    } catch (error) {
+        if (error.message.includes("Rate Limit Exceeded")) {
+            const resetTime = error.headers['ratelimit-reset']; // Time when limit resets (UTC timestamp)
+            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds (UTC)
+            const waitTime = resetTime - currentTime + 5; // Wait for the reset time plus 5 seconds buffer
+            console.log(`Rate limit exceeded. Waiting ${waitTime} seconds before retrying...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime * 1000)); // Wait for the reset time to pass
+            return loginWithRateLimitHandling(agent); // Retry login after waiting
+        }
+        throw error; // Re-throw other errors
+    }
+}
+
 // FUNCTION: Bluesky posting
 export async function postToBlueSky(postArray, agent) {
 
@@ -120,19 +122,16 @@ export async function likeSearchedPosts(agent) {
     try {
         const response = await agent.app.bsky.feed.searchPosts({
             q: `I need motivation -#nsfw -#motivationalboobs -#gay -cock -democrat -republican`,
-            limit: 5, // Adjust limit as needed
+            limit: 7, // Adjust limit as needed
         });
-
-        // const { posts: posts, cursor: nextCursor } = response.data;
-        // console.log(response.data.posts);
 
         for (const post of response.data.posts) {
             let preview = post.record.text;
-            preview = preview.length > 20 ? preview.substring(0, 20) + "..." : preview;
+            preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
             try {
                 if (!post.viewer?.like) {
                     await agent.like(post.uri, post.cid);
-                    console.log(`${getFormattedDate()} - Liked post: ${preview}`);
+                    console.log(`${getFormattedDate()} - Liked Search post: ${preview}`);
                 }
             } catch (error) {
                 console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
@@ -145,14 +144,14 @@ export async function likeSearchedPosts(agent) {
     try {
         const response = await agent.app.bsky.feed.searchPosts({
             q: `I need discipline -#nsfw -#motivationalboobs -#gay -cock`,
-            limit: 5, // Adjust limit as needed
+            limit: 7, // Adjust limit as needed
         });
 
         const { posts: posts, cursor: nextCursor } = response.data;
 
         for (const post of response.data.posts) {
             let preview2 = post.record.text;
-            preview2 = preview2.length > 20 ? preview2.substring(0, 20) + "..." : preview2;
+            preview2 = preview2.length > 30 ? preview2.substring(0, 30) + "..." : preview2;
             try {
                 if (!post.viewer?.like) {
                     await agent.like(
@@ -166,25 +165,42 @@ export async function likeSearchedPosts(agent) {
             }
         }
 
-        cursor = nextCursor; // Update cursor for pagination
+        // cursor = nextCursor;
+         // Update cursor for pagination
     } catch (error) {
         console.error(`${getFormattedDate()} - Error during search for 'I need discipline':`, error);
     }
-
 }
 
 export async function likeFeed(agent){
     try{
         const { data } = await agent.getTimeline({
-            limit: 50,
+            limit: 15,
         });
 
         const { feed: postsArray, cursor: nextPage } = data
 
-        for(const post of postArray){
-            console.log(post);
+        for(const post of postsArray){
+            
+            if(post.post?.record?.text && 
+                (post.post.record.text.includes("motivation") || 
+                post.post.record.text.includes("discipline") || 
+                post.post.record.text.includes("congratulations!") ||
+                post.post.record.text.includes("graduated with my degree") ||
+                post.post.record.text.includes("hopeful") ||
+                post.post.record.text.includes("inspiration") ||
+                post.post.record.text.includes("I'm so excited") ||
+                post.post.record.text.includes("happiness") ||
+                post.post.record.text.includes("to the gym"))){
+                    let preview = post.post.record.text;
+                    preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
+                    await agent.like(post.post.uri, post.post.cid);
+                    console.log(`${getFormattedDate()} - Liked feed post: ${preview}`);
+            }
+            console.log(post.post.record.text);
+
         }
     } catch (error){
-        console.error(`${getFormattedDate()} - Error during liking feed`)
+        console.error(`${getFormattedDate()} - Error during liking feed`, error.message, error.stack)
     }
 }
