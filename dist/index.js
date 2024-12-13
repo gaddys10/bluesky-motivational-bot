@@ -13,6 +13,10 @@ import * as process from 'process';
 // Import post list
 import { posts }  from '../data/postList.js'
 
+import http from 'http';
+
+const PORT = process.env.PORT || 3000;
+
 import { 
     likeSearchedPosts, 
     loginWithRateLimitHandling, 
@@ -93,3 +97,13 @@ searchLikeJob.start();
 likeFeedJob.start();
 
 // QUOTE POST REPOST CRON JOB
+
+
+
+// Simple HTTP server to keep Render happy
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Cron jobs are running\n');
+}).listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
