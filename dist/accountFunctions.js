@@ -133,7 +133,7 @@ export async function likeFeed(agent){
                 post.post.record.text.includes("congratulations!") ||
                 post.post.record.text.includes("hopeful") ||
                 post.post.record.text.includes("inspiration") ||
-                post.post.record.text.includes("happiness")){
+                post.post.record.text.includes("happiness"))){
                     let preview = post.post.record.text;
                     preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
                     await agent.like(post.post.uri, post.post.cid);
