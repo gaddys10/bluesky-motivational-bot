@@ -129,11 +129,15 @@ export async function likeFeed(agent){
             
             if(post.post?.record?.text && 
                 (post.post.record.text.includes("motivation") || 
+                (post.post.record.text.includes("motivated") || 
                 post.post.record.text.includes("discipline") || 
                 post.post.record.text.includes("congratulations!") ||
+                post.post.record.text.includes("\"graduated with my degree\"") ||
                 post.post.record.text.includes("hopeful") ||
+                post.post.record.text.includes("champion") ||
                 post.post.record.text.includes("inspiration") ||
-                post.post.record.text.includes("happiness"))){
+                post.post.record.text.includes("happiness") ||
+                post.post.record.text.includes("\"to the gym\"")))){
                     let preview = post.post.record.text;
                     preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
                     await agent.like(post.post.uri, post.post.cid);
@@ -151,7 +155,7 @@ export async function likeFeed(agent){
 export async function likeSearchedPosts(agent) {
     try {
         const response = await agent.app.bsky.feed.searchPosts({
-            q: `I need motivation -#nsfw -#motivationalboobs -#gay -cock -democrat -republican`,
+            q: `\"I need motivation\" -#nsfw -#motivationalboobs -#gay -cock -democrat -republican`,
             limit: 7, // Adjust limit as needed
         });
 
@@ -173,11 +177,9 @@ export async function likeSearchedPosts(agent) {
 
     try {
         const response = await agent.app.bsky.feed.searchPosts({
-            q: `I need discipline -#nsfw -#motivationalboobs -#gay -cock`,
+            q: `\"I need discipline\" -#nsfw -#motivationalboobs -#gay -cock`,
             limit: 7, // Adjust limit as needed
         });
-
-        const { posts: posts, cursor: nextCursor } = response.data;
 
         for (const post of response.data.posts) {
             let preview2 = post.record.text;
