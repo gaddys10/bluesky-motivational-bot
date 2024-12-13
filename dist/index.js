@@ -13,6 +13,16 @@ import * as process from 'process';
 // Import post list
 import { posts }  from '../data/postList.js'
 
+import { 
+    likeSearchedPosts, 
+    loginWithRateLimitHandling, 
+    fetchAllPosts, 
+    postToBlueSky, 
+    followOhsyrusFollowers,
+    likeFeed,
+    getFormattedDate
+} from './accountFunctions.js';
+
 // Load env variables from the `.env` file into `process.env`
 dotenv.config();
 
@@ -21,208 +31,26 @@ const agent = new BskyAgent({
     service: 'https://bsky.social', // Specify the Bluesky service URL
 });
 
-function getFormattedDate() {
-    return new Date(Date.now()).toLocaleString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit', 
-        hour12: true 
-    });
-}
-
-async function loginWithRateLimitHandling(agent) {
-    try {
-        const session = agent.session;
-        if (!(session && session.handle)) {
-            await agent.login({
-                identifier: process.env.BLUESKY_USERNAME,
-                password: process.env.BLUESKY_PASSWORD
-            });
-        }
-    } catch (error) {
-        if (error.message.includes("Rate Limit Exceeded")) {
-            const resetTime = error.headers['ratelimit-reset']; // Time when limit resets (UTC timestamp)
-            const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds (UTC)
-            const waitTime = resetTime - currentTime + 5; // Wait for the reset time plus 5 seconds buffer
-            console.log(`Rate limit exceeded. Waiting ${waitTime} seconds before retrying...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime * 1000)); // Wait for the reset time to pass
-            return loginWithRateLimitHandling(agent); // Retry login after waiting
-        }
-        throw error; // Re-throw other errors
-    }
-}
-
 // Example usage:
 await loginWithRateLimitHandling(agent);
 
-// FUNCTION: Collect all posts
-async function fetchAllPosts(agent) {
-    const allPosts = [];
-    let cursor;
-
-    do {
-        const { data } = await agent.getAuthorFeed({
-            actor: process.env.BLUESKY_USERNAME,
-            cursor,
-            limit: 20,
-        });
-
-        allPosts.push(...data.feed);
-        cursor = data.cursor; // Pagination
-    } while (cursor);
-
-    return allPosts;
-}
-
-// FUNCTION: Bluesky posting
-async function postToBlueSky(postArray) {
-
-    const allPosts = await fetchAllPosts(agent);
-    let newPost;
-    let postExists = true;
-
-    while (postExists) {
-        const randomIndex = Math.floor(Math.random() * postArray.length);
-        newPost = postArray[randomIndex];
-        postExists = allPosts.some(post => post.text === newPost); // Compare `text` field specifically
-        if (postExists) console.log(`${getFormattedDate()} - Selected post already posted. Trying another...`);
-    }
-
-    // Post to BlueSky
-    await agent.post({
-        text: newPost,
-        createdAt: new Date().toISOString()
-    });
-
-    // Log post success
-    console.log(`${getFormattedDate()} - Just posted: ${newPost}`);
-}
-
-// FUNCTION: Follow @ohsyrus followers
-async function followOhsyrusFollowers(actor) {
-    const allFollowers = [];
-    let cursor = null;
-
-    // Fetch all followers using pagination
-    do {
-        const response = await agent.api.app.bsky.graph.getFollowers({
-            actor,
-            cursor,
-            limit: 100, // Maximum limit per API request
-        });
-
-        // Extract Followers
-        const { followers, cursor: nextCursor } = response.data;
-
-        // Add fetched followers to the list
-        allFollowers.push(...followers);
-
-        // Update the cursor for the next page
-        cursor = nextCursor;
-
-    } while (cursor);
-
-    // console.log(`${getFormattedDate()} - ${allFollowers.length} currently following @ohsyrus.bsky.social`)
-
-    // For each follower starting from earlierst (to only run once)
-    for (let i = allFollowers.length - 1; i >= 0; i--) {
-        const follower = allFollowers[i];
-        try {
-            // Check if already following
-            if (!follower.viewer?.following) {
-                //Follow by DID if not following & exit loop
-                console.log(`${getFormattedDate()} - Now following: ${follower.handle}`);
-                await agent.follow(follower.did);
-                break;
-            } else {
-                // console.log(`${getFormattedDate()} - Already following: ${follower.handle}. Skipping..`);
-            }
-            
-        } catch (error) {
-            console.error(`${getFormattedDate()} - Error following @${follower.handle}:`, error);
-        }
-    }
-}
-
-// FUNCTION: Like 5 searched posts
-async function likeSearchedPosts() {
-    let cursor = null; // Initialize cursor for the first query
-
-        try {
-            const response = await agent.app.bsky.feed.searchPosts({
-                q: "motivation",
-                limit: 5, // Adjust limit as needed
-            });
-
-            const { posts: posts, cursor: nextCursor } = response.data;
-            // console.log(response.data.posts);
-
-            for (const post of response.data.posts) {
-                let preview = post.record.text;
-                preview = preview.length > 20 ? preview.substring(0, 20) + "..." : preview;
-                try {
-                    if (!post.viewer?.like) {
-                        await agent.like(
-                            post.uri,
-                            post.cid,
-                        );
-                        console.log(`${getFormattedDate()} - Liked post: ${preview}`);
-                    }
-                } catch (error) {
-                    console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
-                }
-            }
-        } catch (error) {
-            console.error(`${getFormattedDate()}Error during search for 'I need motivation':`, error);
-    }
-
-    try {
-        const response = await agent.app.bsky.feed.searchPosts({
-            q: "discipline",
-            limit: 5, // Adjust limit as needed
-        });
-
-        const { posts: posts, cursor: nextCursor } = response.data;
-
-        for (const post of response.data.posts) {
-            let preview2 = post.record.text;
-            preview2 = preview2.length > 20 ? preview2.substring(0, 20) + "..." : preview2;
-            try {
-                if (!post.viewer?.like) {
-                    await agent.like(
-                        post.uri,
-                        post.cid,
-                    );
-                    console.log(`${getFormattedDate()} - Liked post: ${preview2}`);
-                }
-            } catch (error) {
-                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
-            }
-        }
-
-        cursor = nextCursor; // Update cursor for pagination
-    } catch (error) {
-        console.error(`${getFormattedDate()} - Error during search for 'I need discipline':`, error);
-    }
-
-}
-
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
-const postScheduleExpression = '0 */3 * * *'; // Run once every three hours in prod
-const followScheduleExpression = '30 */8 * * *'; // Run once every 8h 30m starting at 12am
+
+const postScheduleExpression = '30 */1 * * *'; // Run once every three hours in prod
+const followScheduleExpression = '0 */3 * * *'; // Run once every 8h 30m starting at 12am
+const likeFeedScheduleExpression = '45 */2 * * *';
+const searchLikeScheduleExpression = '30 */4 * * *'; // run once every 1h 30m
+
+const repostScheduleExpression = '* * * * *';
 const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
-const likeFollowingScheduleExpression = '30 */6 * * *' // Run every 6h 30m starting at 12am
-const searchLikeScheduleExpression = '30 */1 * * *'; // run once every 1h 30m
+
 
 // Configure postToBlueSky to run on a 3 hour cron job
 const postJob = new CronJob(
     postScheduleExpression, 
     async () => {
-        await postToBlueSky(posts);
+        await postToBlueSky(posts, agent);
     }
 );
 
@@ -230,7 +58,7 @@ const postJob = new CronJob(
 const followJob = new CronJob(
     followScheduleExpression, 
     async () => {
-        await followOhsyrusFollowers('ohsyrus.bsky.social');
+        await followOhsyrusFollowers(agent);
     }
 ); 
 
@@ -238,12 +66,19 @@ const followJob = new CronJob(
 const searchLikeJob = new CronJob(
     searchLikeScheduleExpression,
     async () => {
-        await likeSearchedPosts();
+        await likeSearchedPosts(agent);
     }
 );
 
+const likeFeedJob = new CronJob(
+    likeFeedScheduleExpression,
+    async () => {
+        await likeFeed(agent);
+    }
+)
+
 // configure followBack to run twice daily
-const followBackJob = new CronJob()
+// const followBackJob = new CronJob()
 
 // START POST CRON JOB! (8 posts/day)[Every 3h]
 postJob.start();
@@ -255,7 +90,6 @@ followJob.start();
 searchLikeJob.start();
 
 // TIMELINE LIKER CRON JOB (2 LIKES/DAY)[Every 12h]
-
-// FOLLOW BACK CRON JOB
+likeFeedJob.start();
 
 // QUOTE POST REPOST CRON JOB
