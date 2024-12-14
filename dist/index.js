@@ -41,9 +41,9 @@ await loginWithRateLimitHandling(agent);
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
 
-const postScheduleExpression = '30 */1 * * *'; // Run once every three hours in prod
-const followScheduleExpression = '0 */3 * * *'; // Run once every 8h 30m starting at 12am
-const likeFeedScheduleExpression = '45 */2 * * *';
+const postScheduleExpression = '45 * * * *'; // Run once every three hours in prod
+const followScheduleExpression = '30 * * * *'; // Run once every 8h 30m starting at 12am
+const likeFeedScheduleExpression = '30 */1 * * *';
 const searchLikeScheduleExpression = '30 */4 * * *'; // run once every 1h 30m
 const repostScheduleExpression = '* * * * *';
 const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
