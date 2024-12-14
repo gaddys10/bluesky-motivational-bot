@@ -51,7 +51,7 @@ const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours startin
 
 // Configure postToBlueSky to run on a 3 hour cron job
 const postJob = new CronJob(
-    scheduleExpressionMinute, 
+    postScheduleExpression, 
     async () => {
         await postToBlueSky(posts, agent);
     }
