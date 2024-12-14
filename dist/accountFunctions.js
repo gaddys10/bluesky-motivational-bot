@@ -1,3 +1,4 @@
+import { RichText } from '@atproto/api';
 
 
 // FUNCTION: Collect all posts
@@ -95,7 +96,6 @@ export async function loginWithRateLimitHandling(agent) {
 
 // FUNCTION: Bluesky posting
 export async function postToBlueSky(postArray, agent) {
-
     const allPosts = await fetchAllPosts(agent);
     let newPost;
     let postExists = true;
@@ -103,20 +103,31 @@ export async function postToBlueSky(postArray, agent) {
     while (postExists) {
         const randomIndex = Math.floor(Math.random() * postArray.length);
         newPost = postArray[randomIndex];
-        postExists = allPosts.some(post => post.text === newPost); // Compare `text` field specifically
-        if (postExists) console.log(`${getFormattedDate()} - Selected post already posted. Trying another...`);
+        const newPostRt = new RichText({ text: newPost });
+
+        await newPostRt.detectFacets(agent);
+
+        postExists = allPosts.some(post => post.text === newPostRt.text);
+
+        if (postExists) {
+            console.log(`${getFormattedDate()} - Selected post already posted. Trying another...`);
+        }
     }
 
-    // Post to BlueSky
+    const resultPost = new RichText({ text: newPost });
+    await resultPost.detectFacets(agent);
+
     await agent.post({
-        text: newPost,
+        text: resultPost.text,
+        facets: resultPost.facets,
         createdAt: new Date().toISOString()
     });
 
-    // Log post success
     console.log(`${getFormattedDate()} - Just posted: ${newPost}`);
 }
 
+
+// FUNCTION: Like posts on feed
 export async function likeFeed(agent){
     try{
         const { data } = await agent.getTimeline({
@@ -143,7 +154,7 @@ export async function likeFeed(agent){
                     await agent.like(post.post.uri, post.post.cid);
                     console.log(`${getFormattedDate()} - Liked feed post: ${preview}`);
             }
-            console.log(post.post.record.text);
+            console.log(`${post.post.record.text}`);
 
         }
     } catch (error){

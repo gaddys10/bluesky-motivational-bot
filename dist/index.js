@@ -45,14 +45,13 @@ const postScheduleExpression = '30 */1 * * *'; // Run once every three hours in 
 const followScheduleExpression = '0 */3 * * *'; // Run once every 8h 30m starting at 12am
 const likeFeedScheduleExpression = '45 */2 * * *';
 const searchLikeScheduleExpression = '30 */4 * * *'; // run once every 1h 30m
-
 const repostScheduleExpression = '* * * * *';
 const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
 
 
 // Configure postToBlueSky to run on a 3 hour cron job
 const postJob = new CronJob(
-    postScheduleExpression, 
+    scheduleExpressionMinute, 
     async () => {
         await postToBlueSky(posts, agent);
     }
