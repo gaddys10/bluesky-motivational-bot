@@ -201,7 +201,7 @@ export async function likeSearchedPosts(agent) {
                         post.uri,
                         post.cid,
                     );
-                    console.log(`${getFormattedDate()} - Liked post: ${preview2}`);
+                    console.log(`${getFormattedDate()} - Liked Feed post: ${preview2}`);
                 }
             } catch (error) {
                 console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);

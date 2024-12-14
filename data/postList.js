@@ -29,6 +29,7 @@ export const posts = [
     "Only a lame wouldn't support their friends to the max",
     "The successful person makes a habit of doing what the failing person refuses to do\n\n #motivation",
     "Aint nothing bout to change for you unless YOU change.",
+    "There's nothing noble about as lack of effort",
     "Tribes were easily taken over because they lacked the ability to organize",
     'Proper Preparation Prevents Poor Performance',
     "keep getting this paper no matter who's in office",

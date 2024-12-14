@@ -41,10 +41,10 @@ await loginWithRateLimitHandling(agent);
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
 
-const postScheduleExpression = '30 */1 * * *'; // Run once every three hours in prod
-const followScheduleExpression = '0 */3 * * *'; // Run once every 8h 30m starting at 12am
-const likeFeedScheduleExpression = '45 */2 * * *';
-const searchLikeScheduleExpression = '30 */4 * * *'; // run once every 1h 30m
+const postScheduleExpression = '12 */1 * * *'; // post once every 1h 12m in prod
+const followScheduleExpression = '0 */1 * * *'; // Follow @ohsyrus followers once every 1h starting at 12am
+const likeFeedScheduleExpression = '45 */1 * * *'; // like x/15 posts on the feed ever 1h 45m
+const searchLikeScheduleExpression = '30 */1 * * *'; // search for motivation and like every 1h 30m
 const repostScheduleExpression = '* * * * *';
 const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
 
