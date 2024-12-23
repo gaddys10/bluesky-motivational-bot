@@ -50,9 +50,8 @@ export async function followOhsyrusFollowers(agent) {
                 //Follow by DID if not following & exit loop
                 console.log(`${getFormattedDate()} - Now following: ${follower.handle}`);
                 await agent.follow(follower.did);
+                await new Promise(resolve => setTimeout(resolve, 500));
                 break;
-            } else {
-                // console.log(`${getFormattedDate()} - Already following: ${follower.handle}. Skipping..`);
             }
         } catch (error) {
             console.error(`${getFormattedDate()} - Error following @${follower.handle}:`, error);
@@ -94,6 +93,96 @@ export async function loginWithRateLimitHandling(agent) {
     }
 }
 
+// FUNCTION: Like posts on feed
+export async function likeFeed(agent){
+    try{
+        const { data } = await agent.getTimeline({
+            limit: 25,
+        });
+
+        const { feed: postsArray, cursor: nextPage } = data
+
+        for(const post of postsArray){
+            
+            if(post.post?.record?.text && 
+                (post.post.record.text.includes("motivation") || 
+                (post.post.record.text.includes("motivated") || 
+                post.post.record.text.includes("discipline") || 
+                post.post.record.text.includes("congratulations!") ||
+                post.post.record.text.includes("\"graduated with my degree\"") ||
+                post.post.record.text.includes("hopeful") ||
+                post.post.record.text.includes("champion") ||
+                post.post.record.text.includes("inspiration") ||
+                post.post.record.text.includes("happiness") ||
+                post.post.record.text.includes("\"to the gym\"")))){
+                    let preview = post.post.record.text;
+                    preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
+                    await agent.like(post.post.uri, post.post.cid);
+                    console.log(`${getFormattedDate()} - Liked feed post: ${preview}`);
+            }
+        }
+    } catch (error){
+        console.error(`${getFormattedDate()} - Error during liking feed`, error.message, error.stack);
+        if (error.code === 'UND_ERR_HEADERS_TIMEOUT') {
+            console.log(`${getFormattedDate()} - Retrying likeFeed...`);
+            setTimeout(() => likeFeed(agent), 5000); // Retry after 5 seconds
+        }    
+    }
+}
+
+// FUNCTION: Like 5 searched posts
+export async function likeSearchedPosts(agent) {
+    try {
+        const response = await agent.app.bsky.feed.searchPosts({
+            q: `\"I need motivation\" -#nsfw -#motivationalboobs -#gay -dick -pussy -sex -cock -horny -democrat -republican`,
+            limit: 7, // Adjust limit as needed
+        });
+
+        for (const post of response.data.posts) {
+            let preview = post.record.text;
+            preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
+            try {
+                if (!post.viewer?.like) {
+                    await agent.like(post.uri, post.cid);
+                    console.log(`${getFormattedDate()} - Liked Search post: ${preview}`);
+                }
+            } catch (error) {
+                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
+            }
+        }
+    } catch (error) {
+        console.error(`${getFormattedDate()} - Error during search for 'I need motivation':`, error);
+    }
+
+    try {
+        const response = await agent.app.bsky.feed.searchPosts({
+            q: `\"I need discipline\" -#nsfw -#motivationalboobs -dick -pussy -fuck -#gay -horny -cock -democrat -republican`,
+            limit: 7, // Adjust limit as needed
+        });
+
+        for (const post of response.data.posts) {
+            let preview2 = post.record.text;
+            preview2 = preview2.length > 30 ? preview2.substring(0, 30) + "..." : preview2;
+            try {
+                if (!post.viewer?.like) {
+                    await agent.like(
+                        post.uri,
+                        post.cid,
+                    );
+                    console.log(`${getFormattedDate()} - Liked post: ${preview2}`);
+                }
+            } catch (error) {
+                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
+            }
+        }
+
+        // cursor = nextCursor;
+         // Update cursor for pagination
+    } catch (error) {
+        console.error(`${getFormattedDate()} - Error during search for 'I need discipline':`, error);
+    }
+}
+
 // FUNCTION: Bluesky posting
 export async function postToBlueSky(postArray, agent) {
     const allPosts = await fetchAllPosts(agent);
@@ -124,94 +213,5 @@ export async function postToBlueSky(postArray, agent) {
     });
 
     console.log(`${getFormattedDate()} - Just posted: ${newPost}`);
-}
-
-
-// FUNCTION: Like posts on feed
-export async function likeFeed(agent){
-    try{
-        const { data } = await agent.getTimeline({
-            limit: 15,
-        });
-
-        const { feed: postsArray, cursor: nextPage } = data
-
-        for(const post of postsArray){
-            
-            if(post.post?.record?.text && 
-                (post.post.record.text.includes("motivation") || 
-                (post.post.record.text.includes("motivated") || 
-                post.post.record.text.includes("discipline") || 
-                post.post.record.text.includes("congratulations!") ||
-                post.post.record.text.includes("\"graduated with my degree\"") ||
-                post.post.record.text.includes("hopeful") ||
-                post.post.record.text.includes("champion") ||
-                post.post.record.text.includes("inspiration") ||
-                post.post.record.text.includes("happiness") ||
-                post.post.record.text.includes("\"to the gym\"")))){
-                    let preview = post.post.record.text;
-                    preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
-                    await agent.like(post.post.uri, post.post.cid);
-                    console.log(`${getFormattedDate()} - Liked feed post: ${preview}`);
-            }
-            console.log(`${post.post.record.text}`);
-
-        }
-    } catch (error){
-        console.error(`${getFormattedDate()} - Error during liking feed`, error.message, error.stack)
-    }
-}
-
-// FUNCTION: Like 5 searched posts
-export async function likeSearchedPosts(agent) {
-    try {
-        const response = await agent.app.bsky.feed.searchPosts({
-            q: `\"I need motivation\" -#nsfw -#motivationalboobs -#gay -cock -democrat -republican`,
-            limit: 7, // Adjust limit as needed
-        });
-
-        for (const post of response.data.posts) {
-            let preview = post.record.text;
-            preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
-            try {
-                if (!post.viewer?.like) {
-                    await agent.like(post.uri, post.cid);
-                    console.log(`${getFormattedDate()} - Liked Search post: ${preview}`);
-                }
-            } catch (error) {
-                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
-            }
-        }
-    } catch (error) {
-        console.error(`${getFormattedDate()} - Error during search for 'I need motivation':`, error);
-    }
-
-    try {
-        const response = await agent.app.bsky.feed.searchPosts({
-            q: `\"I need discipline\" -#nsfw -#motivationalboobs -#gay -cock`,
-            limit: 7, // Adjust limit as needed
-        });
-
-        for (const post of response.data.posts) {
-            let preview2 = post.record.text;
-            preview2 = preview2.length > 30 ? preview2.substring(0, 30) + "..." : preview2;
-            try {
-                if (!post.viewer?.like) {
-                    await agent.like(
-                        post.uri,
-                        post.cid,
-                    );
-                    console.log(`${getFormattedDate()} - Liked post: ${preview2}`);
-                }
-            } catch (error) {
-                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
-            }
-        }
-
-        // cursor = nextCursor;
-         // Update cursor for pagination
-    } catch (error) {
-        console.error(`${getFormattedDate()} - Error during search for 'I need discipline':`, error);
-    }
 }
 

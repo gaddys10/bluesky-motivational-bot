@@ -33,6 +33,7 @@ dotenv.config();
 // Create new instance of Bluesky agent to handle communication w Bluesky service
 const agent = new BskyAgent({
     service: 'https://bsky.social', // Specify the Bluesky service URL
+    fetchTimeout: 20000, // Increase timeout to 10 seconds
 });
 
 // Example usage:
@@ -41,10 +42,10 @@ await loginWithRateLimitHandling(agent);
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
 
-const postScheduleExpression = '45 * * * *'; // Run once every three hours in prod
-const followScheduleExpression = '30 * * * *'; // Run once every 8h 30m starting at 12am
-const likeFeedScheduleExpression = '30 */1 * * *';
-const searchLikeScheduleExpression = '30 */4 * * *'; // run once every 1h 30m
+const postScheduleExpression = '43 * * * *'; // Run once every three hours in prod
+const followScheduleExpression = '0 */1 * * *'; // Run once every 8h 30m starting at 12am
+const likeFeedScheduleExpression = '30 * * * *';
+const searchLikeScheduleExpression = '20 * * * *'; // run once every 1h 30m
 const repostScheduleExpression = '* * * * *';
 const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
 
@@ -98,11 +99,11 @@ likeFeedJob.start();
 // QUOTE POST REPOST CRON JOB
 
 
-
 // Simple HTTP server to keep Render happy
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Cron jobs are running\n');
 }).listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Environment port: ${process.env.PORT}`);3
 });
