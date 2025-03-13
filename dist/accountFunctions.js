@@ -1,19 +1,36 @@
 import { RichText } from '@atproto/api';
 
 
-// FUNCTION: Collect all posts
 export async function fetchAllPosts(agent) {
     const allPosts = [];
     let cursor;
+    const maxRetries = 3; // Number of retries
+    let retries = 0;
+
     do {
-        const { data } = await agent.getAuthorFeed({
-            actor: process.env.BLUESKY_USERNAME,
-            cursor,
-            limit: 20,
-        });
-        allPosts.push(...data.feed);
-        cursor = data.cursor; // Pagination
+        try {
+            const { data } = await agent.getAuthorFeed({
+                actor: process.env.BLUESKY_USERNAME,
+                cursor,
+                limit: 10,
+            });
+            allPosts.push(...data.feed);
+            cursor = data.cursor; // Pagination
+        } catch (error) {
+            console.error(`${getFormattedDate()} - Error fetching posts:`, error);
+
+            if (retries < maxRetries) {
+                retries++;
+                const delay = Math.pow(2, retries) * 1000; // Exponential backoff
+                console.log(`${getFormattedDate()} - Retrying fetchAllPosts in ${delay / 1000} seconds (Attempt ${retries}/${maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                console.error(`${getFormattedDate()} - Max retries reached. Exiting fetchAllPosts.`);
+                throw error; // Exit after max retries
+            }
+        }
     } while (cursor);
+
     return allPosts;
 }
 
@@ -21,40 +38,63 @@ export async function fetchAllPosts(agent) {
 export async function followOhsyrusFollowers(agent) {
     const allFollowers = [];
     let cursor = null;
+    const maxRetries = 3;
+    let retries = 0;
 
     // Fetch all followers using pagination
     do {
-        const response = await agent.app.bsky.graph.getFollowers({
-            actor: 'ohsyrus.bsky.social',
-            cursor,
-            limit: 100, // Maximum limit per API request
-        });
+        try {
+            const response = await agent.app.bsky.graph.getFollowers({
+                actor: 'ohsyrus.bsky.social',
+                cursor,
+                limit: 100, // Maximum limit per API request
+            });
 
-        // Extract Followers
-        const { followers, cursor: nextCursor } = response.data;
+            // Extract Followers
+            const { followers, cursor: nextCursor } = response.data;
 
-        // Add fetched followers to the list
-        allFollowers.push(...followers);
+            // Add fetched followers to the list
+            allFollowers.push(...followers);
 
-        // Update the cursor for the next page
-        cursor = nextCursor;
+            // Update the cursor for the next page
+            cursor = nextCursor;
+        } catch (error) {
+            console.error(`${getFormattedDate()} - Error fetching followers:`, error);
 
+            if (retries < maxRetries) {
+                retries++;
+                const delay = Math.pow(2, retries) * 1000; // Exponential backoff
+                console.log(`${getFormattedDate()} - Retrying in ${delay / 1000} seconds (Attempt ${retries}/${maxRetries})...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                console.error(`${getFormattedDate()} - Max retries reached. Exiting.`);
+                throw error;
+            }
+        }
     } while (cursor);
-    // console.log(`${getFormattedDate()} - ${allFollowers.length} currently following @ohsyrus.bsky.social`)
-    // For each follower starting from earlierst (to only run once)
+
+    // For each follower starting from the earliest (to only run once)
     for (let i = allFollowers.length - 1; i >= 0; i--) {
         const follower = allFollowers[i];
         try {
             // Check if already following
             if (!follower.viewer?.following) {
-                //Follow by DID if not following & exit loop
+                // Follow by DID if not already following
                 console.log(`${getFormattedDate()} - Now following: ${follower.handle}`);
-                await agent.follow(follower.did);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                break;
+                await agent.follow(follower.did); // Make the follow API call
+                await new Promise(resolve => setTimeout(resolve, 500)); // Delay between follow calls
+                break; // Exit the loop after following one user
             }
         } catch (error) {
-            console.error(`${getFormattedDate()} - Error following @${follower.handle}:`, error);
+            if (error.code === 'ECONNRESET') {
+                // Handle connection reset error
+                console.error(`${getFormattedDate()} - Connection reset while following: ${follower.handle}. Retrying in 5 seconds...`);
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Retry after a delay
+                i++; // Adjust loop index to retry the same follower
+            } else {
+                // Log and handle other errors
+                console.error(`${getFormattedDate()} - Error following @${follower.handle}:`, error);
+            }
         }
     }
 }

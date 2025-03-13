@@ -32,8 +32,8 @@ dotenv.config();
 
 // Create new instance of Bluesky agent to handle communication w Bluesky service
 const agent = new BskyAgent({
-    service: 'https://bsky.social', // Specify the Bluesky service URL
-    fetchTimeout: 20000, // Increase timeout to 10 seconds
+    service: 'https://bsky.social',
+    fetchTimeout: 120000, // Increased timeout
 });
 
 // Example usage:
@@ -42,10 +42,10 @@ await loginWithRateLimitHandling(agent);
 // change to scheduleExpressionMinute for testing
 const scheduleExpressionMinute = '* * * * *'; // Run once every minute for testing
 
-const postScheduleExpression = '43 * * * *'; // Run once every three hours in prod
-const followScheduleExpression = '0 */1 * * *'; // Run once every 8h 30m starting at 12am
-const likeFeedScheduleExpression = '30 * * * *';
-const searchLikeScheduleExpression = '20 * * * *'; // run once every 1h 30m
+const postScheduleExpression = '30 */11 * * *'; // Post twice every day
+const followScheduleExpression = '0 */8 * * *'; // Follow once every 8 hours
+const likeFeedScheduleExpression = '30 */8 * * *'; // like feed every 8 hours
+const searchLikeScheduleExpression = '20 */7 * * *'; // like searches every 8 hours
 const repostScheduleExpression = '* * * * *';
 const followBackScheduleExpression = '0 */6 * * *'; // Run every 6 hours starting at 12am
 
@@ -91,10 +91,10 @@ postJob.start();
 followJob.start();
 
 // SEARCH LIKER CRON JOB (240 likes/day)[Every 30m]
-searchLikeJob.start();
+// searchLikeJob.start();
 
 // TIMELINE LIKER CRON JOB (2 LIKES/DAY)[Every 12h]
-likeFeedJob.start();
+// likeFeedJob.start();
 
 // QUOTE POST REPOST CRON JOB
 
