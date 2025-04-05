@@ -153,6 +153,8 @@ export async function likeFeed(agent){
                 post.post.record.text.includes("hopeful") ||
                 post.post.record.text.includes("champion") ||
                 post.post.record.text.includes("inspiration") ||
+                post.post.record.text.includes("\"I finally got a chance to\"") ||
+                post.post.record.text.includes("inspiration") ||
                 post.post.record.text.includes("happiness") ||
                 post.post.record.text.includes("\"to the gym\"")))){
                     let preview = post.post.record.text;
@@ -175,6 +177,50 @@ export async function likeSearchedPosts(agent) {
     try {
         const response = await agent.app.bsky.feed.searchPosts({
             q: `\"I need motivation\" -#nsfw -#motivationalboobs -#gay -dick -pussy -sex -cock -horny -democrat -republican`,
+            limit: 7, // Adjust limit as needed
+        });
+
+        for (const post of response.data.posts) {
+            let preview = post.record.text;
+            preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
+            try {
+                if (!post.viewer?.like) {
+                    await agent.like(post.uri, post.cid);
+                    console.log(`${getFormattedDate()} - Liked Search post: ${preview}`);
+                }
+            } catch (error) {
+                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
+            }
+        }
+    } catch (error) {
+        console.error(`${getFormattedDate()} - Error during search for 'I need motivation':`, error);
+    }
+
+    try {
+        const response = await agent.app.bsky.feed.searchPosts({
+            q: `\"work has paid off\" -#nsfw -#motivationalboobs -#gay -dick -pussy -sex -cock -horny -democrat -republican`,
+            limit: 7, // Adjust limit as needed
+        });
+
+        for (const post of response.data.posts) {
+            let preview = post.record.text;
+            preview = preview.length > 30 ? preview.substring(0, 30) + "..." : preview;
+            try {
+                if (!post.viewer?.like) {
+                    await agent.like(post.uri, post.cid);
+                    console.log(`${getFormattedDate()} - Liked Search post: ${preview}`);
+                }
+            } catch (error) {
+                console.error(`${getFormattedDate()} - Error liking post: ${post.uri}`, error);
+            }
+        }
+    } catch (error) {
+        console.error(`${getFormattedDate()} - Error during search for 'I need motivation':`, error);
+    }
+
+    try {
+        const response = await agent.app.bsky.feed.searchPosts({
+            q: `\"\" -#nsfw -#motivationalboobs -#gay -dick -pussy -sex -cock -horny -democrat -republican`,
             limit: 7, // Adjust limit as needed
         });
 
